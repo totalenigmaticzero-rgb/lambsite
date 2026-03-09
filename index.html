@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toshi-onics — Canine Personality System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800;900&family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+/* ════════════════════════════════════════════════════════
+   TOKENS
+════════════════════════════════════════════════════════ */
+:root {
+  --bg:          #F2EDE3;
+  --surface:     #FFFFFF;
+  --surface2:    #EAE4D8;
+  --border:      #DED6C6;
+  --text:        #1A1410;
+  --text-sub:    #7A6E60;
+  --card-dark:   #231A10;
+  --card-text:   #F0EAE0;
+  --card-sub:    #B8A898;
+
+  --acc:         #CC4415;   /* burnt-orange primary     */
+  --acc-dim:     #F6DFD4;
+  --lime:        #A8CC00;   /* lime accent (Frolic)     */
+  --blue:        #1E8CC8;   /* teal-blue                */
+
+  --agree-hi:    #1A6828;
+  --agree-lo:    #5A9E60;
+  --neutral:     #9A9080;
+  --dis-lo:      #CC7070;
+  --dis-hi:      #A82018;
+
+  --r:           18px;
+  --rp:          100px;
+  --sh:          0 2px 12px rgba(26,20,16,.07);
+  --shm:         0 6px 32px rgba(26,20,16,.11);
+  --t:           0.2s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"] {
+  --bg:          #141008;
+  --surface:     #1E1810;
+  --surface2:    #272018;
+  --border:      #342A20;
+  --text:        #EDE8DF;
+  --text-sub:    #908070;
+  --card-dark:   #0E0C08;
+  --card-text:   #EDE8DF;
+  --card-sub:    #807060;
+  --acc:         #E05020;
+  --acc-dim:     #281408;
+  --lime:        #94B800;
+  --blue:        #2090C8;
+  --sh:          0 2px 12px rgba(0,0,0,.28);
+  --shm:         0 6px 32px rgba(0,0,0,.40);
+}
+
+/* ════════════════════════════════════════════════════════
+   RESET
+════════════════════════════════════════════════════════ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; -webkit-font-smoothing:antialiased; }
+body {
+  font-family:'Figtree',sans-serif;
+  background:var(--bg); color:var(--text);
+  min-height:100vh; overflow-x:hidden;
+  transition:background var(--t),color var(--t);
+}
+button { font-family:inherit; cursor:pointer; border:none; }
+img    { display:block; }
+
+/* ════════════════════════════════════════════════════════
+   TOPBAR
+════════════════════════════════════════════════════════ */
+.topbar {
+  position:fixed; top:0; left:0; right:0; z-index:400;
+  height:56px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 24px;
+  background:var(--bg);
+  border-bottom:1.5px solid var(--border);
+  transition:background var(--t),border-color var(--t);
+}
+.logo {
+  display:flex; align-items:center; gap:8px;
+  background:none; border:none; padding:0;
+  cursor:pointer;
+}
+.logo-box {
+  width:30px; height:30px;
+  background:var(--acc); border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+}
+.logo-box svg { width:17px; height:17px; fill:#fff; }
+.logo-name {
+  font-family:'Unbounded',sans-serif;
+  font-size:0.82rem; font-weight:800;
+  letter-spacing:-0.01em; color:var(--text);
+}
+.topbar-r { display:flex; align-items:center; gap:8px; }
+
+/* Pill button */
+.pill {
+  height:32px; padding:0 14px;
+  border-radius:var(--rp);
+  border:1.5px solid var(--border);
+  background:var(--surface);
+  color:var(--text-sub);
+  font-family:'Figtree',sans-serif;
+  font-size:0.75rem; font-weight:600;
+  transition:all var(--t);
+}
+.pill:hover { border-color:var(--acc); color:var(--acc); }
+
+/* Icon button */
+.ibtn {
+  width:32px; height:32px; border-radius:50%;
+  border:1.5px solid var(--border);
+  background:var(--surface); color:var(--text-sub);
+  display:flex; align-items:center; justify-content:center;
+  transition:all var(--t);
+}
+.ibtn:hover { border-color:var(--acc); color:var(--acc); }
+.ibtn svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ════════════════════════════════════════════════════════
+   PAGE WRAPPER
+════════════════════════════════════════════════════════ */
+.page {
+  min-height:100vh;
+  padding:74px 18px 60px;
+  display:flex; align-items:center; justify-content:center;
+}
+.screen { display:none; width:100%; max-width:640px; }
+.screen.on {
+  display:flex; flex-direction:column; align-items:center;
+  animation:fadeUp .35s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+/* ════════════════════════════════════════════════════════
+   SHARED COMPONENTS
+════════════════════════════════════════════════════════ */
+.eyebrow {
+  font-family:'Unbounded',sans-serif;
+  font-size:0.6rem; font-weight:700;
+  letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--acc); margin-bottom:16px;
+}
+
+/* Primary CTA */
+.btn-p {
+  padding:14px 36px;
+  background:var(--text); color:var(--bg);
+  font-family:'Unbounded',sans-serif;
+  font-size:0.72rem; font-weight:700; letter-spacing:0.02em;
+  border-radius:var(--rp);
+  box-shadow: 0 4px 18px rgba(0,0,0,.18);
+  transition:all var(--t);
+}
+.btn-p:hover { background:var(--acc); transform:translateY(-2px); box-shadow:0 8px 24px rgba(204,68,21,.35); }
+.btn-p:active { transform:none; }
+
+/* Ghost CTA */
+.btn-g {
+  padding:13px 28px;
+  background:transparent; color:var(--text-sub);
+  font-size:0.82rem; font-weight:500;
+  border:1.5px solid var(--border);
+  border-radius:var(--rp);
+  transition:all var(--t);
+}
+.btn-g:hover { border-color:var(--text-sub); color:var(--text); }
+
+/* Back nav */
+.back {
+  display:flex; align-items:center; gap:6px;
+  font-size:0.78rem; font-weight:600; color:var(--text-sub);
+  background:none; border:none; margin-bottom:28px;
+  align-self:flex-start; transition:color var(--t);
+}
+.back:hover { color:var(--acc); }
+.back svg { width:13px; height:13px; }
+
+/* ════════════════════════════════════════════════════════
+   INTRO
+════════════════════════════════════════════════════════ */
+.hero-title {
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(2.8rem,9vw,5.4rem);
+  font-weight:900;
+  line-height:0.9; letter-spacing:-0.04em;
+  text-align:center;
+  margin-bottom:22px;
+}
+.hero-title .line2 {
+  display:block;
+  color:var(--acc);
+  -webkit-text-stroke:0px;
+}
+
+.hero-sub {
+  font-size:0.95rem; line-height:1.72;
+  color:var(--text-sub);
+  text-align:center; max-width:400px;
+  margin-bottom:38px;
+}
+
+/* Stats strip */
+.stats {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  width:100%;
+  border:1.5px solid var(--border);
+  border-radius:var(--r); overflow:hidden;
+  background:var(--border); gap:1px;
+  margin-bottom:32px;
+}
+.stat {
+  background:var(--surface);
+  padding:18px 8px; text-align:center;
+}
+.stat-n {
+  font-family:'Unbounded',sans-serif;
+  font-size:1.7rem; font-weight:900;
+  letter-spacing:-0.04em; color:var(--text);
+  line-height:1;
+}
+.stat-l {
+  font-size:0.62rem; font-weight:700;
+  letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--text-sub); margin-top:4px;
+}
+.cta-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+
+/* ════════════════════════════════════════════════════════
+   FUNCTIONS GUIDE
+════════════════════════════════════════════════════════ */
+.page-title {
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(1.6rem,5vw,2.4rem);
+  font-weight:900; letter-spacing:-0.035em;
+  text-align:center; line-height:1.05;
+  margin-bottom:10px;
+}
+.page-sub {
+  font-size:0.9rem; line-height:1.68;
+  color:var(--text-sub); text-align:center;
+  max-width:460px; margin-bottom:32px;
+}
+
+.fn-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:10px; width:100%; margin-bottom:28px;
+}
+@media(max-width:480px){ .fn-grid { grid-template-columns:1fr; } }
+
+.fn-card {
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:16px; padding:20px 18px;
+  transition:border-color var(--t),box-shadow var(--t);
+}
+.fn-card:hover { border-color:var(--acc); box-shadow:var(--sh); }
+
+.fn-top { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.fn-ico {
+  width:36px; height:36px; border-radius:9px;
+  background:var(--acc-dim); color:var(--acc);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.fn-ico svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.fn-code {
+  font-family:'Unbounded',sans-serif;
+  font-size:1.1rem; font-weight:800; color:var(--text); line-height:1;
+}
+.fn-fullname {
+  font-size:0.65rem; font-weight:700;
+  letter-spacing:0.07em; text-transform:uppercase;
+  color:var(--text-sub); margin-top:2px;
+}
+.fn-desc {
+  font-size:0.8rem; line-height:1.6; color:var(--text-sub); margin-bottom:10px;
+}
+.fn-pills { display:flex; flex-wrap:wrap; gap:4px; }
+.fn-pill {
+  padding:2px 8px; background:var(--surface2);
+  border-radius:20px; font-size:0.66rem; font-weight:600; color:var(--text-sub);
+}
+
+/* ════════════════════════════════════════════════════════
+   QUESTION CARD  (dark, Frolic-inspired)
+════════════════════════════════════════════════════════ */
+.prog-wrap { width:100%; margin-bottom:20px; }
+.prog-top {
+  display:flex; justify-content:space-between; align-items:baseline;
+  margin-bottom:8px;
+}
+.prog-lbl {
+  font-family:'Unbounded',sans-serif;
+  font-size:0.58rem; font-weight:700;
+  letter-spacing:0.14em; text-transform:uppercase; color:var(--text-sub);
+}
+.prog-num {
+  font-family:'Unbounded',sans-serif;
+  font-size:0.75rem; font-weight:700; color:var(--text-sub);
+}
+.prog-track { height:4px; background:var(--surface2); border-radius:2px; overflow:hidden; }
+.prog-fill  {
+  height:100%; background:var(--acc); border-radius:2px;
+  transition:width .55s cubic-bezier(.4,0,.2,1);
+}
+
+/* The dark question card */
+.q-card {
+  width:100%;
+  background:var(--card-dark);
+  border-radius:var(--r);
+  padding:36px 32px 30px;
+  box-shadow:var(--shm);
+}
+@media(max-width:480px){ .q-card { padding:26px 18px 22px; } }
+
+.q-num {
+  font-family:'Unbounded',sans-serif;
+  font-size:0.58rem; font-weight:700;
+  letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--acc); margin-bottom:14px;
+}
+.q-text {
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(1rem,2.8vw,1.25rem);
+  font-weight:700; letter-spacing:-0.02em; line-height:1.38;
+  color:var(--card-text);
+  margin-bottom:40px;
+}
+
+/* ── DOT SCALE ── */
+.scale-wrap { width:100%; }
+
+/* 5-column grid — all cells bottom-align so labels sit on the same row */
+.scale-grid {
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  align-items:end;          /* bottom-align every column */
+  gap:0;
+  width:100%;
+  margin-bottom:10px;
+}
+
+.dot-col {
+  display:flex; flex-direction:column;
+  align-items:center; gap:8px;
+  cursor:pointer;
+  padding: 0 2px;
+}
+
+/* Fixed-height area that holds the ring —
+   all five columns share the same 72px pocket,
+   so rings of different sizes all centre inside the same space */
+.dot-ring-area {
+  width:100%;
+  height:72px;            /* tallest ring (60px) + 12px breathing room */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* outer ring container */
+.dot-ring {
+  border-radius:50%;
+  border:2px solid transparent;
+  display:flex; align-items:center; justify-content:center;
+  transition:all var(--t);
+  flex-shrink:0;
+}
+.dot-col:nth-child(1) .dot-ring,
+.dot-col:nth-child(5) .dot-ring { width:60px; height:60px; }
+.dot-col:nth-child(2) .dot-ring,
+.dot-col:nth-child(4) .dot-ring { width:48px; height:48px; }
+.dot-col:nth-child(3) .dot-ring { width:38px; height:38px; }
+
+/* inner filled dot */
+.dot-fill {
+  border-radius:50%;
+  transition:all var(--t);
+  flex-shrink:0;
+}
+.dot-col:nth-child(1) .dot-fill,
+.dot-col:nth-child(5) .dot-fill { width:44px; height:44px; }
+.dot-col:nth-child(2) .dot-fill,
+.dot-col:nth-child(4) .dot-fill { width:32px; height:32px; }
+.dot-col:nth-child(3) .dot-fill { width:24px; height:24px; }
+
+/* dot colours */
+.dot-col[data-v="5"] .dot-fill { background:var(--agree-hi); }
+.dot-col[data-v="4"] .dot-fill { background:var(--agree-lo); }
+.dot-col[data-v="3"] .dot-fill { background:var(--neutral);  }
+.dot-col[data-v="2"] .dot-fill { background:var(--dis-lo);   }
+.dot-col[data-v="1"] .dot-fill { background:var(--dis-hi);   }
+
+/* default: muted */
+.dot-col .dot-ring { opacity:.45; }
+.dot-col .dot-fill { opacity:.9;  }
+
+/* hover */
+.dot-col:hover .dot-ring { opacity:1; transform:scale(1.08); }
+
+/* selected */
+.dot-col.sel .dot-ring { opacity:1; transform:scale(1.12); }
+.dot-col[data-v="5"].sel .dot-ring { border-color:var(--agree-hi); box-shadow:0 0 0 4px var(--card-dark),0 0 0 7px var(--agree-hi); }
+.dot-col[data-v="4"].sel .dot-ring { border-color:var(--agree-lo); box-shadow:0 0 0 4px var(--card-dark),0 0 0 7px var(--agree-lo); }
+.dot-col[data-v="3"].sel .dot-ring { border-color:var(--neutral);  box-shadow:0 0 0 4px var(--card-dark),0 0 0 7px var(--neutral);  }
+.dot-col[data-v="2"].sel .dot-ring { border-color:var(--dis-lo);   box-shadow:0 0 0 4px var(--card-dark),0 0 0 7px var(--dis-lo);   }
+.dot-col[data-v="1"].sel .dot-ring { border-color:var(--dis-hi);   box-shadow:0 0 0 4px var(--card-dark),0 0 0 7px var(--dis-hi);   }
+
+/* labels — fixed height so all columns are identical below the ring area */
+.dot-label {
+  font-size:0.62rem; font-weight:600;
+  color:var(--card-sub);
+  text-align:center; line-height:1.3;
+  width:100%;
+  min-height:2.6em;       /* room for two lines — keeps all labels the same height */
+  display:flex; align-items:flex-start; justify-content:center;
+}
+.dot-col.sel .dot-label { color:var(--card-text); }
+
+/* scale edge labels row */
+.scale-edge-labels {
+  display:flex; justify-content:space-between;
+  padding:0 2px;
+  margin-top:2px;
+}
+.edge-lbl {
+  font-size:0.62rem; font-weight:700;
+  letter-spacing:0.05em; text-transform:uppercase;
+  color:var(--card-sub);
+}
+
+/* ── QUESTION NAV ── */
+.q-nav {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top:28px;
+}
+.qnav-btn {
+  display:flex; align-items:center; gap:7px;
+  padding:10px 20px;
+  border-radius:var(--rp);
+  border:1.5px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:var(--card-sub);
+  font-family:'Figtree',sans-serif;
+  font-size:0.8rem; font-weight:600;
+  transition:all var(--t);
+}
+.qnav-btn:hover:not(:disabled) {
+  border-color:rgba(255,255,255,.35); color:var(--card-text);
+}
+.qnav-btn:disabled { opacity:.25; cursor:default; }
+.qnav-btn svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+.qnav-btn.fwd {
+  background:var(--card-text); color:var(--card-dark);
+  border-color:var(--card-text);
+  font-family:'Unbounded',sans-serif; font-size:0.65rem; font-weight:700;
+}
+.qnav-btn.fwd:hover:not(:disabled) { background:var(--acc); border-color:var(--acc); color:#fff; }
+.nav-hint { font-size:0.7rem; color:var(--card-sub); }
+
+/* ════════════════════════════════════════════════════════
+   INCONCLUSIVE SCREEN
+════════════════════════════════════════════════════════ */
+.inconcl-card {
+  width:100%;
+  background:var(--card-dark);
+  border-radius:var(--r);
+  padding:48px 36px;
+  text-align:center;
+  box-shadow:var(--shm);
+  margin-bottom:14px;
+}
+.inconcl-badge {
+  display:inline-block;
+  padding:6px 16px; border-radius:var(--rp);
+  background:rgba(255,255,255,.08);
+  font-family:'Unbounded',sans-serif;
+  font-size:0.58rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--card-sub); margin-bottom:22px;
+}
+.inconcl-title {
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(1.6rem,5vw,2.6rem);
+  font-weight:900; letter-spacing:-0.03em; line-height:1;
+  color:var(--card-text); margin-bottom:16px;
+}
+.inconcl-sub {
+  font-size:0.9rem; line-height:1.7; color:var(--card-sub);
+  max-width:380px; margin:0 auto 32px;
+}
+.inconcl-actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+.inconcl-actions .btn-p { background:var(--card-text); color:var(--card-dark); }
+.inconcl-actions .btn-p:hover { background:var(--acc); color:#fff; }
+
+/* ════════════════════════════════════════════════════════
+   RESULT SCREEN
+════════════════════════════════════════════════════════ */
+.r-hero {
+  width:100%;
+  background:var(--card-dark);
+  border-radius:var(--r);
+  overflow:hidden;
+  box-shadow:var(--shm);
+  margin-bottom:12px;
+}
+
+/* photo area */
+.r-photo-wrap {
+  width:100%; aspect-ratio:16/9;
+  background:var(--card-dark); position:relative; overflow:hidden;
+}
+.r-photo {
+  width:100%; height:100%; object-fit:cover;
+  opacity:0; transition:opacity .5s ease; display:block;
+}
+.r-photo.vis { opacity:1; }
+.r-skel {
+  position:absolute; inset:0;
+  background:linear-gradient(90deg,#2A2018 25%,#382E22 50%,#2A2018 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s infinite ease-in-out;
+}
+@keyframes shimmer { to { background-position:-200% 0; } }
+
+.r-body { padding:32px 30px 28px; }
+@media(max-width:480px){ .r-body { padding:22px 18px 20px; } }
+
+.r-type-lbl {
+  font-family:'Unbounded',sans-serif;
+  font-size:0.56rem; font-weight:700;
+  letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--acc); margin-bottom:10px;
+}
+.r-breed {
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(1.8rem,6vw,3.2rem);
+  font-weight:900; letter-spacing:-0.04em;
+  line-height:0.92; color:var(--card-text);
+  margin-bottom:8px;
+}
+.r-arch {
+  font-family:'Figtree',sans-serif;
+  font-style:italic; font-size:1rem; font-weight:500;
+  color:var(--card-sub); margin-bottom:16px;
+}
+.r-pack {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 12px;
+  border:1.5px solid rgba(255,255,255,.15); border-radius:var(--rp);
+  font-size:0.72rem; font-weight:600; color:var(--card-sub);
+  margin-bottom:16px;
+}
+.r-pack svg { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.r-hr { height:1px; background:rgba(255,255,255,.1); margin:14px 0; }
+.r-desc { font-size:0.9rem; line-height:1.72; color:var(--card-sub); }
+
+/* secondary result cards */
+.r-sec {
+  width:100%;
+  background:var(--surface);
+  border:1.5px solid var(--border);
+  border-radius:var(--r);
+  padding:24px 26px;
+  margin-bottom:10px;
+  box-shadow:var(--sh);
+}
+@media(max-width:480px){ .r-sec { padding:18px 16px; } }
+.r-sec-title {
+  font-family:'Unbounded',sans-serif;
+  font-size:0.58rem; font-weight:700;
+  letter-spacing:0.13em; text-transform:uppercase;
+  color:var(--text-sub); margin-bottom:16px;
+}
+
+/* stack grid */
+.stack-g {
+  display:grid; grid-template-columns:1fr 1fr; gap:8px;
+}
+@media(max-width:420px){ .stack-g { grid-template-columns:1fr; } }
+.stack-item {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px;
+  background:var(--surface2); border:1.5px solid var(--border);
+  border-radius:12px;
+}
+.stack-n {
+  width:22px; height:22px; border-radius:50%;
+  background:var(--acc); color:#fff;
+  font-family:'Unbounded',sans-serif;
+  font-size:0.62rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.stack-item:not(:first-child) .stack-n { background:var(--border); color:var(--text-sub); }
+.stack-fn { font-family:'Unbounded',sans-serif; font-size:0.88rem; font-weight:800; color:var(--text); }
+.stack-fn-sub { font-size:0.67rem; color:var(--text-sub); margin-top:1px; }
+.stack-role {
+  font-size:0.58rem; font-weight:700;
+  letter-spacing:0.07em; text-transform:uppercase; color:var(--acc); margin-top:2px;
+}
+
+/* score bars */
+.score-bars { display:flex; flex-direction:column; gap:8px; }
+.score-row  { display:flex; align-items:center; gap:10px; }
+.score-lbl  { width:106px; flex-shrink:0; font-size:0.72rem; font-weight:600; color:var(--text-sub); }
+.score-track { flex:1; height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; position:relative; }
+.score-fill  {
+  height:100%; width:0%; border-radius:3px;
+  background:var(--acc);
+  transition:width .8s cubic-bezier(.4,0,.2,1);
+}
+/* neutral line at 50% */
+.score-track::after {
+  content:''; position:absolute; top:0; bottom:0;
+  left:50%; width:1.5px; background:var(--border);
+}
+.score-pct  { width:26px; text-align:right; font-size:0.72rem; font-weight:600; color:var(--text-sub); }
+
+/* result actions */
+.r-actions { width:100%; display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+.r-actions .btn-p, .r-actions .btn-g { flex:1; text-align:center; }
+
+/* ════════════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════════════ */
+.toast {
+  position:fixed; bottom:20px; left:50%;
+  transform:translateX(-50%) translateY(8px);
+  background:var(--text); color:var(--bg);
+  padding:9px 20px; border-radius:var(--rp);
+  font-size:0.78rem; font-weight:600;
+  opacity:0; pointer-events:none;
+  transition:all .22s ease; z-index:999;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ───────────────────────────── -->
+<nav class="topbar">
+  <button class="logo" onclick="go('screen-intro')">
+    <span class="logo-box">
+      <svg viewBox="0 0 24 24"><path d="M12 2.5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-4.8 1.5C6.1 4 5.2 4.9 5.2 6s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9.6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM5 9.2C3.3 9.2 2 10.5 2 12.2c0 2.7 2.2 4.5 4.3 6.4C7.4 19.6 8.4 20.6 8.4 22h7.2c0-1.4 1-2.4 2.1-3.4 2.1-1.9 4.3-3.7 4.3-6.4 0-1.7-1.3-3-3-3-1.3 0-2.1 1-2.5 1.4-.4.4-1 .9-2.1.9H9.6c-1.1 0-1.7-.5-2.1-.9C7.1 10.2 6.3 9.2 5 9.2z"/></svg>
+    </span>
+    <span class="logo-name">Toshi-onics</span>
+  </button>
+  <div class="topbar-r">
+    <button class="pill" onclick="openFns()">Functions Guide</button>
+    <button class="ibtn" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">
+      <!-- moon icon (light mode shows this) -->
+      <svg id="ico-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <!-- sun icon (dark mode shows this) -->
+      <svg id="ico-sun"  viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </div>
+</nav>
+
+<main class="page">
+
+  <!-- ── INTRO ────────────────────────────── -->
+  <section class="screen on" id="screen-intro">
+    <p class="eyebrow">Canine Personality System</p>
+    <h1 class="hero-title">
+      Find Your<br>
+      <span class="line2">Inner Breed</span>
+    </h1>
+    <p class="hero-sub">
+      Toshi-onics maps your natural instincts to one of 16 dog breed archetypes through 8 behavioural functions. Inspired by Socionics and MBTI, built for dogs.
+    </p>
+    <div class="stats">
+      <div class="stat"><div class="stat-n">24</div><div class="stat-l">Questions</div></div>
+      <div class="stat"><div class="stat-n">8</div><div class="stat-l">Functions</div></div>
+      <div class="stat"><div class="stat-n">16</div><div class="stat-l">Breeds</div></div>
+      <div class="stat"><div class="stat-n">4m</div><div class="stat-l">Est. Time</div></div>
+    </div>
+    <div class="cta-row">
+      <button class="btn-p" onclick="startTest()">Begin the Test</button>
+      <button class="btn-g" onclick="openFns()">View Functions</button>
+    </div>
+  </section>
+
+  <!-- ── FUNCTIONS GUIDE ──────────────────── -->
+  <section class="screen" id="screen-fns">
+    <button class="back" onclick="goBack()">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    </button>
+    <p class="eyebrow">Reference</p>
+    <h2 class="page-title">The 8 Instinct<br>Functions</h2>
+    <p class="page-sub">
+      Each breed type is defined by four functions in an Alpha-to-Puppy stack. Your answers determine how strongly each function scores for you.
+    </p>
+    <div class="fn-grid" id="fnGrid"></div>
+    <button class="btn-p" onclick="startTest()">Start the Test</button>
+  </section>
+
+  <!-- ── QUESTION ──────────────────────────── -->
+  <section class="screen" id="screen-q">
+    <div class="prog-wrap">
+      <div class="prog-top">
+        <span class="prog-lbl">Progress</span>
+        <span class="prog-num" id="progNum">1 / 24</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:4%"></div></div>
+    </div>
+
+    <div class="q-card" id="qCard">
+      <p class="q-num"  id="qNum">Question 01</p>
+      <p class="q-text" id="qText">Loading</p>
+
+      <div class="scale-wrap">
+        <div class="scale-grid" id="scaleGrid">
+          <div class="dot-col" data-v="5" onclick="pick(5)">
+            <div class="dot-ring-area"><div class="dot-ring"><div class="dot-fill"></div></div></div>
+            <span class="dot-label">Strongly<br>Agree</span>
+          </div>
+          <div class="dot-col" data-v="4" onclick="pick(4)">
+            <div class="dot-ring-area"><div class="dot-ring"><div class="dot-fill"></div></div></div>
+            <span class="dot-label">Somewhat<br>Agree</span>
+          </div>
+          <div class="dot-col" data-v="3" onclick="pick(3)">
+            <div class="dot-ring-area"><div class="dot-ring"><div class="dot-fill"></div></div></div>
+            <span class="dot-label">Unsure</span>
+          </div>
+          <div class="dot-col" data-v="2" onclick="pick(2)">
+            <div class="dot-ring-area"><div class="dot-ring"><div class="dot-fill"></div></div></div>
+            <span class="dot-label">Somewhat<br>Disagree</span>
+          </div>
+          <div class="dot-col" data-v="1" onclick="pick(1)">
+            <div class="dot-ring-area"><div class="dot-ring"><div class="dot-fill"></div></div></div>
+            <span class="dot-label">Strongly<br>Disagree</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="q-nav">
+        <button class="qnav-btn" id="btnBack" onclick="prevQ()" disabled>
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <span class="nav-hint" id="navHint">Select an option</span>
+        <button class="qnav-btn fwd" id="btnNext" onclick="nextQ()" disabled>
+          Next
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── INCONCLUSIVE ──────────────────────── -->
+  <section class="screen" id="screen-inconcl">
+    <div class="inconcl-card">
+      <span class="inconcl-badge">Results Unclear</span>
+      <h2 class="inconcl-title">No Clear<br>Breed Found</h2>
+      <p class="inconcl-sub">
+        Your answers were too neutral for the system to identify a strong breed match. Try answering more decisively: lean toward agree or disagree rather than staying in the middle.
+      </p>
+      <div class="inconcl-actions">
+        <button class="btn-p" onclick="startTest()">Try Again</button>
+        <button class="btn-g" style="color:var(--card-sub);border-color:rgba(255,255,255,.15)" onclick="openFns()">View Functions</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── RESULT ────────────────────────────── -->
+  <section class="screen" id="screen-result">
+    <div class="r-hero">
+      <div class="r-photo-wrap" id="photoWrap">
+        <div class="r-skel" id="rSkel"></div>
+        <img class="r-photo" id="rPhoto" alt="" onload="imgOk()" onerror="imgFail()">
+      </div>
+      <div class="r-body">
+        <p class="r-type-lbl">Your Toshi-onics Type</p>
+        <h2 class="r-breed" id="rBreed"></h2>
+        <p class="r-arch"   id="rArch"></p>
+        <div class="r-pack" id="rPack"></div>
+        <div class="r-hr"></div>
+        <p class="r-desc"   id="rDesc"></p>
+      </div>
+    </div>
+
+    <div class="r-sec">
+      <p class="r-sec-title">Instinct Stack</p>
+      <div class="stack-g" id="stackG"></div>
+    </div>
+
+    <div class="r-sec">
+      <p class="r-sec-title">Function Scores (50% is neutral)</p>
+      <div class="score-bars" id="scoreBars"></div>
+    </div>
+
+    <div class="r-actions">
+      <button class="btn-g" onclick="startTest()">Retake</button>
+      <button class="btn-p" onclick="copyRes()">Copy Result</button>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+/* ════════════════════════════════════════════
+   DATA
+════════════════════════════════════════════ */
+const FNS = {
+  Sn:{ name:'Sniffing',     icon:'compass',
+       desc:'The drive to explore, investigate, and seek out new information. High-Sn types are drawn to unfamiliar environments, obscure subjects, and novel experiences for their own sake.',
+       traits:['Curiosity','Exploration','Discovery'] },
+  Tr:{ name:'Tracking',    icon:'git-branch',
+       desc:'The ability to identify patterns, anticipate outcomes, and reason along extended chains of logic. High-Tr types see structure and predictability where others see randomness.',
+       traits:['Pattern recognition','Foresight','Strategic thinking'] },
+  Pk:{ name:'Pack Bonding',icon:'users',
+       desc:'The need for deep, stable social connection and group belonging. High-Pk types invest heavily in loyalty and derive much of their identity from the relationships they maintain.',
+       traits:['Loyalty','Group identity','Consistency'] },
+  Ld:{ name:'Leading',     icon:'flag',
+       desc:'The instinct to take charge, set direction, and coordinate others. High-Ld types step into organisational roles naturally and prefer clear ownership over outcomes.',
+       traits:['Direction','Organisation','Decisiveness'] },
+  Ch:{ name:'Chasing',     icon:'zap',
+       desc:'Raw drive, competitive energy, and goal-oriented ambition. High-Ch types are energised by obstacles, thrive under pressure, and measure themselves against their own peak output.',
+       traits:['Drive','Ambition','Resilience'] },
+  Pl:{ name:'Play',        icon:'sparkles',
+       desc:'Creative spontaneity, lateral thinking, and humour as a social tool. High-Pl types resist rigid structures and approach problems by generating unconventional options first.',
+       traits:['Creativity','Humour','Spontaneity'] },
+  Gr:{ name:'Guarding',    icon:'shield',
+       desc:'Protective caution, structured thinking, and a strong sense of personal responsibility. High-Gr types prioritise safety, reliability, and the welfare of those around them.',
+       traits:['Protection','Structure','Responsibility'] },
+  Cm:{ name:'Calming',     icon:'anchor',
+       desc:'Emotional regulation, patience, and the ability to de-escalate tension. High-Cm types stabilise groups under stress and make everyone feel acknowledged and settled.',
+       traits:['Patience','Reassurance','Mediation'] },
+};
+
+const QS = [
+  // Sn — Sniffing / curiosity
+  { text:'When you have unscheduled time, you tend to seek out something new rather than return to something familiar.', fn:'Sn' },
+  { text:'You often find yourself exploring topics that have no clear connection to your current goals.', fn:'Sn' },
+  { text:'Entering an unfamiliar environment makes you more curious than uncomfortable.', fn:'Sn' },
+  // Tr — Tracking / pattern
+  { text:'You tend to anticipate how a situation will develop before others raise the possibility.', fn:'Tr' },
+  { text:'You notice recurring patterns in people\'s behaviour that rarely get pointed out by others.', fn:'Tr' },
+  { text:'Before making a significant decision, you typically think through several possible future scenarios.', fn:'Tr' },
+  // Pk — Pack Bonding
+  { text:'A small circle of deep relationships is more meaningful to you than a wide network of lighter ones.', fn:'Pk' },
+  { text:'You feel a strong sense of belonging to the specific groups you are part of.', fn:'Pk' },
+  { text:'You tend to stay consistent and available for people in your life even when it is personally inconvenient.', fn:'Pk' },
+  // Ld — Leading
+  { text:'In a group without clear direction, you tend to take on an organising role.', fn:'Ld' },
+  { text:'You are comfortable making decisions that affect others when no clear answer exists.', fn:'Ld' },
+  { text:'You prefer having clear ownership over a task rather than sharing responsibility equally.', fn:'Ld' },
+  // Ch — Chasing / drive
+  { text:'When you face a significant obstacle, your motivation tends to increase rather than decrease.', fn:'Ch' },
+  { text:'You find high-pressure or competitive situations more energising than draining.', fn:'Ch' },
+  { text:'You primarily evaluate your progress against your own previous standards rather than other people\'s.', fn:'Ch' },
+  // Pl — Play / creativity
+  { text:'When approaching a problem, you tend to generate several unconventional options before evaluating them.', fn:'Pl' },
+  { text:'Humour and wit are important elements of how you communicate and connect with people.', fn:'Pl' },
+  { text:'Highly structured or rigid environments tend to constrain rather than support your thinking.', fn:'Pl' },
+  // Gr — Guarding
+  { text:'You assess potential risks carefully before committing to a new course of action.', fn:'Gr' },
+  { text:'You feel a strong sense of personal responsibility for the wellbeing of people around you.', fn:'Gr' },
+  { text:'A consistent and predictable routine is important to how you maintain your performance.', fn:'Gr' },
+  // Cm — Calming
+  { text:'People frequently come to you to help them process difficult or stressful situations.', fn:'Cm' },
+  { text:'In tense situations, you tend to remain composed while others lose focus.', fn:'Cm' },
+  { text:'You are effective at finding resolutions that leave all parties feeling acknowledged.', fn:'Cm' },
+];
+
+const BREEDS = [
+  { name:'Border Collie',          arch:'The Work Ethic',       pack:'Explorer',  packI:'compass',
+    api:'breed/collie/border',       stack:['Tr','Ld','Sn','Ch'],
+    desc:'Relentless and precise. You are most effective working toward a complex goal and naturally see structure where others see noise. Your intensity is a genuine strength, though your standards have been known to outlast everyone around you.' },
+  { name:'Siberian Husky',         arch:'The Free Spirit',      pack:'Explorer',  packI:'compass',
+    api:'breed/husky',               stack:['Sn','Ch','Pl','Tr'],
+    desc:'Built to move and discover. You resist any structure that feels like a cage, thrive in unfamiliar territory, and bring a restless, magnetic energy wherever you go. Your independence is genuine, not a pose.' },
+  { name:'Beagle',                 arch:'The Scent Follower',   pack:'Explorer',  packI:'compass',
+    api:'breed/beagle',              stack:['Sn','Tr','Pl','Pk'],
+    desc:'Nose to the ground, mind always moving. You follow every interesting thread until it yields something real, and you bring a warm, playful curiosity to even the most methodical investigation.' },
+  { name:'Australian Shepherd',   arch:'The Ranch Mind',       pack:'Explorer',  packI:'compass',
+    api:'breed/australian/shepherd', stack:['Ld','Tr','Gr','Ch'],
+    desc:'Built to manage complexity. You have both the foresight to plan and the drive to execute, and you hold high standards for yourself above all. You do not leave things half-finished.' },
+  { name:'Golden Retriever',      arch:'The Golden Standard',  pack:'Companion', packI:'heart',
+    api:'breed/retriever/golden',    stack:['Pk','Cm','Pl','Ld'],
+    desc:'Warm without effort. You hold spaces together through loyalty and genuine care, and people feel safe around you without quite being able to explain why. Your consistency is quietly extraordinary.' },
+  { name:'Labrador Retriever',    arch:'The Eager Partner',    pack:'Companion', packI:'heart',
+    api:'breed/retriever/labrador',  stack:['Pk','Ch','Pl','Cm'],
+    desc:'Fully present and endlessly committed. You show up completely for the people and goals that matter to you, and you bring real energy and joy to everything you take on.' },
+  { name:'Cavalier King Charles', arch:'The Comfort Seeker',   pack:'Companion', packI:'heart',
+    api:'breed/spaniel/cocker',      stack:['Cm','Pk','Gr','Pl'],
+    desc:'Quietly attentive. You notice when someone is struggling before they say a word, and you offer steady presence rather than quick fixes. Your gentleness is a form of deep, sustained care.' },
+  { name:'American Eskimo Dog',   arch:'The Bright Performer', pack:'Companion', packI:'heart',
+    api:'breed/samoyed',             stack:['Pl','Sn','Ld','Gr'],
+    desc:'Playful, sharp, and more capable than anyone expects. You light up every room you enter, ask the questions others forget to ask, and hold things together behind the scenes. This is Toshi\'s type.' },
+  { name:'German Shepherd',       arch:'The Working Dog',      pack:'Guardian',  packI:'shield',
+    api:'breed/germanshepherd',      stack:['Gr','Ld','Tr','Ch'],
+    desc:'Disciplined, dependable, and built for demanding roles. You take responsibility seriously, lead with precision, and hold loyalty above almost everything else. Trust with you is earned slowly and honoured completely.' },
+  { name:'Rottweiler',            arch:'The Calm Enforcer',    pack:'Guardian',  packI:'shield',
+    api:'breed/rottweiler',          stack:['Gr','Ld','Ch','Cm'],
+    desc:'Steady and immovable. Your strength does not announce itself, it is simply felt. You protect without hesitation, hold the line when others waver, and carry a loyalty that has no expiry date.' },
+  { name:'Akita',                 arch:'The Loyal Guardian',   pack:'Guardian',  packI:'shield',
+    api:'breed/akita',               stack:['Gr','Cm','Tr','Ld'],
+    desc:'Patient, perceptive, and entirely self-possessed. You do not seek attention, but nothing escapes your notice. Your calm is a form of power, and your loyalty is given rarely but held without reservation.' },
+  { name:'Doberman',              arch:'The Alert Companion',  pack:'Guardian',  packI:'shield',
+    api:'breed/doberman',            stack:['Ld','Ch','Tr','Gr'],
+    desc:'Decisive, fast, and built for pressure. You move quickly, think clearly, and hold yourself to an exceptionally high standard. Your precision earns trust, and your loyalty once given is complete.' },
+  { name:'Jack Russell Terrier',  arch:'The Tunnel Digger',    pack:'Chaos',     packI:'zap',
+    api:'breed/terrier/russell',     stack:['Pl','Ch','Sn','Tr'],
+    desc:'Small, relentless, and completely undeterred. You never met a problem you did not want to dismantle, a rule you did not want to test, or a quiet moment you could not improve.' },
+  { name:'Corgi',                 arch:'The Clever Herder',    pack:'Chaos',     packI:'zap',
+    api:'breed/corgi/cardigan',      stack:['Pl','Ld','Ch','Pk'],
+    desc:'Deceptively capable. You lead with humour but land with real authority. Behind the jokes is a strategic mind that knows exactly what is happening and exactly how to steer it.' },
+  { name:'Shiba Inu',             arch:'The Independent Mind', pack:'Chaos',     packI:'zap',
+    api:'breed/shiba',               stack:['Tr','Gr','Sn','Pl'],
+    desc:'Observant, selective, and entirely self-directed. You trust your own judgement above group consensus and have developed a quiet confidence that others find hard to read but impossible to ignore.' },
+  { name:'Pomeranian',            arch:'The Tiny Lion',        pack:'Chaos',     packI:'zap',
+    api:'breed/pomeranian',          stack:['Pl','Pk','Cm','Sn'],
+    desc:'All personality, no apology. You know exactly who you are and fill every room with warmth, wit, and a specific kind of confidence that is genuinely difficult to manufacture. People underestimate you exactly once.' },
+];
+
+/* ════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════ */
+let curr    = 0;
+let answers = new Array(QS.length).fill(null);
+let prevScr = 'screen-intro';
+
+/* ════════════════════════════════════════════
+   THEME
+════════════════════════════════════════════ */
+function toggleTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  document.getElementById('ico-moon').style.display = dark ? '' : 'none';
+  document.getElementById('ico-sun').style.display  = dark ? 'none' : '';
+}
+
+/* ════════════════════════════════════════════
+   SCREEN MANAGEMENT
+════════════════════════════════════════════ */
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  const el = document.getElementById(id);
+  el.classList.add('on');
+  void el.offsetWidth; // re-trigger animation
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function goBack() { go(prevScr); }
+
+/* ════════════════════════════════════════════
+   FUNCTIONS PAGE
+════════════════════════════════════════════ */
+const FN_ICONS = {
+  compass:     `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`,
+  'git-branch':`<svg viewBox="0 0 24 24"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>`,
+  users:       `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  flag:        `<svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>`,
+  zap:         `<svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  sparkles:    `<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>`,
+  shield:      `<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  anchor:      `<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>`,
+  compass2:    `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`,
+  heart:       `<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+};
+
+function buildFnGrid() {
+  const g = document.getElementById('fnGrid');
+  g.innerHTML = '';
+  Object.entries(FNS).forEach(([code, fn]) => {
+    const c = document.createElement('div');
+    c.className = 'fn-card';
+    c.innerHTML = `
+      <div class="fn-top">
+        <div class="fn-ico">${FN_ICONS[fn.icon] || FN_ICONS.compass}</div>
+        <div>
+          <div class="fn-code">${code}</div>
+          <div class="fn-fullname">${fn.name}</div>
+        </div>
+      </div>
+      <p class="fn-desc">${fn.desc}</p>
+      <div class="fn-pills">${fn.traits.map(t=>`<span class="fn-pill">${t}</span>`).join('')}</div>
+    `;
+    g.appendChild(c);
+  });
+}
+function openFns() {
+  prevScr = document.querySelector('.screen.on')?.id || 'screen-intro';
+  buildFnGrid();
+  go('screen-fns');
+}
+
+/* ════════════════════════════════════════════
+   TEST FLOW
+════════════════════════════════════════════ */
+function startTest() {
+  curr    = 0;
+  answers = new Array(QS.length).fill(null);
+  go('screen-q');
+  renderQ();
+}
+
+function renderQ() {
+  const q = QS[curr];
+  const n = curr + 1;
+  document.getElementById('qNum').textContent   = `Question ${String(n).padStart(2,'0')}`;
+  document.getElementById('qText').textContent  = q.text;
+  document.getElementById('progNum').textContent = `${n} / ${QS.length}`;
+  document.getElementById('progFill').style.width = `${(n / QS.length) * 100}%`;
+
+  // restore selection
+  document.querySelectorAll('.dot-col').forEach(d => d.classList.remove('sel'));
+  if (answers[curr] !== null) {
+    document.querySelector(`.dot-col[data-v="${answers[curr]}"]`)?.classList.add('sel');
+    setReady(true);
+  } else { setReady(false); }
+  document.getElementById('btnBack').disabled = curr === 0;
+
+  // re-animate card
+  const card = document.getElementById('qCard');
+  card.style.animation = 'none'; void card.offsetWidth;
+  card.style.animation = 'fadeUp .28s cubic-bezier(.4,0,.2,1) both';
+}
+
+function setReady(yes) {
+  document.getElementById('btnNext').disabled    = !yes;
+  document.getElementById('navHint').textContent = yes ? '' : 'Select an option';
+}
+
+function pick(val) {
+  document.querySelectorAll('.dot-col').forEach(d => d.classList.remove('sel'));
+  document.querySelector(`.dot-col[data-v="${val}"]`).classList.add('sel');
+  answers[curr] = val;
+  setReady(true);
+  // auto-advance
+  setTimeout(() => {
+    if (answers[curr] === null) return;
+    if (curr < QS.length - 1) { nextQ(true); }
+    else { calcResult(); }
+  }, 500);
+}
+
+function nextQ(auto = false) {
+  if (answers[curr] === null) return;
+  if (curr < QS.length - 1) {
+    curr++; renderQ();
+    if (!auto) document.getElementById('qCard').scrollIntoView({ behavior:'smooth', block:'center' });
+  } else { calcResult(); }
+}
+
+function prevQ() {
+  if (curr > 0) {
+    curr--; renderQ();
+    setTimeout(() => document.getElementById('qCard').scrollIntoView({ behavior:'smooth', block:'center' }), 40);
+  }
+}
+
+/* ════════════════════════════════════════════
+   SCORING  — centered on zero
+   5 → +2 | 4 → +1 | 3 → 0 | 2 → -1 | 1 → -2
+   normalised to 0–100% where 50% = pure neutral
+════════════════════════════════════════════ */
+function calcResult() {
+  const sum = {Sn:0,Tr:0,Pk:0,Ld:0,Ch:0,Pl:0,Gr:0,Cm:0};
+  const cnt = {Sn:0,Tr:0,Pk:0,Ld:0,Ch:0,Pl:0,Gr:0,Cm:0};
+
+  answers.forEach((v, i) => {
+    if (v === null) return;
+    const centered = v - 3;          // map 1-5 → -2,-1,0,+1,+2
+    sum[QS[i].fn] += centered;
+    cnt[QS[i].fn]++;
+  });
+
+  // norm[k] is in [-1, +1]; display as 0–100%
+  const norm = {};
+  Object.keys(sum).forEach(k => {
+    norm[k] = cnt[k] ? sum[k] / (cnt[k] * 2) : 0;
+  });
+
+  const vals = Object.values(norm);
+  const spread = Math.max(...vals) - Math.min(...vals);
+
+  // If the profile is too flat (spread < 0.25 out of a max of 2.0), results are meaningless
+  if (spread < 0.25) {
+    go('screen-inconcl');
+    return;
+  }
+
+  // Match breed using deviation-weighted scoring
+  const weights = [4, 3, 2, 1];
+  let best = BREEDS[0], bestSc = -Infinity;
+  BREEDS.forEach(br => {
+    const sc = br.stack.reduce((a, fn, i) => a + norm[fn] * weights[i], 0);
+    if (sc > bestSc) { bestSc = sc; best = br; }
+  });
+
+  // Also guard: if even the best breed scores negatively overall, show inconclusive
+  if (bestSc < 0.3) {
+    go('screen-inconcl');
+    return;
+  }
+
+  renderResult(best, norm);
+  go('screen-result');
+}
+
+/* ════════════════════════════════════════════
+   RENDER RESULT
+════════════════════════════════════════════ */
+function renderResult(br, norm) {
+  document.getElementById('rBreed').textContent = br.name;
+  document.getElementById('rArch').textContent  = br.arch;
+  document.getElementById('rDesc').textContent  = br.desc;
+
+  // pack tag with inline svg
+  const packIconSVG = FN_ICONS[br.packI] || FN_ICONS.compass;
+  document.getElementById('rPack').innerHTML = `${packIconSVG}<span>${br.pack} Pack</span>`;
+
+  loadPhoto(br.api);
+
+  // Instinct stack
+  const sg = document.getElementById('stackG');
+  sg.innerHTML = '';
+  const roles = ['Alpha','Beta','Gamma','Puppy'];
+  br.stack.forEach((fn, i) => {
+    const d = document.createElement('div');
+    d.className = 'stack-item';
+    d.innerHTML = `
+      <div class="stack-n">${i+1}</div>
+      <div>
+        <div class="stack-fn">${fn}</div>
+        <div class="stack-fn-sub">${FNS[fn].name}</div>
+        <div class="stack-role">${roles[i]} Instinct</div>
+      </div>`;
+    sg.appendChild(d);
+  });
+
+  // Score bars — convert norm (-1..+1) to display pct (0..100)
+  const sb = document.getElementById('scoreBars');
+  sb.innerHTML = '';
+  Object.entries(norm)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([fn, v]) => {
+      const pct = Math.round((v + 1) / 2 * 100); // -1→0%, 0→50%, +1→100%
+      const r = document.createElement('div');
+      r.className = 'score-row';
+      r.innerHTML = `
+        <span class="score-lbl">${fn} · ${FNS[fn].name}</span>
+        <div class="score-track"><div class="score-fill" data-p="${pct}"></div></div>
+        <span class="score-pct">${pct}%</span>`;
+      sb.appendChild(r);
+    });
+
+  // animate bars on next frame
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.score-fill')
+        .forEach(b => { b.style.width = b.dataset.p + '%'; });
+    }, 200);
+  });
+}
+
+/* ════════════════════════════════════════════
+   BREED PHOTO  (dog.ceo API)
+════════════════════════════════════════════ */
+function loadPhoto(api) {
+  const img = document.getElementById('rPhoto');
+  const sk  = document.getElementById('rSkel');
+  img.classList.remove('vis'); img.src = '';
+  sk.style.display = '';
+  document.getElementById('photoWrap').style.display = '';
+
+  fetch(`https://dog.ceo/api/${api}/images/random`)
+    .then(r => r.json())
+    .then(d => { if (d.status === 'success') img.src = d.message; else imgFail(); })
+    .catch(imgFail);
+}
+function imgOk() {
+  document.getElementById('rPhoto').classList.add('vis');
+  document.getElementById('rSkel').style.display = 'none';
+}
+function imgFail() {
+  document.getElementById('rSkel').style.display = 'none';
+  document.getElementById('photoWrap').style.display = 'none';
+}
+
+/* ════════════════════════════════════════════
+   UTILS
+════════════════════════════════════════════ */
+function copyRes() {
+  const b = document.getElementById('rBreed').textContent;
+  const a = document.getElementById('rArch').textContent;
+  navigator.clipboard.writeText(`My Toshi-onics type is ${b}: ${a}. Find yours at Toshi-onics.`).catch(() => {});
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
